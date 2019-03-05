@@ -1,3 +1,5 @@
+import { SSL_OP_SSLREF2_REUSE_CERT_TYPE_BUG } from "constants";
+
 /**************************************************************
  * Point: defines a point on the map using X and Y coordinates
  *
@@ -43,13 +45,20 @@ class Point {
  **********************************************************/
 class Wallet {
   // implement Wallet!
-  constructor(money = 0) {}
+  constructor(money = 0) {
+    this.money = money;
+  }
 
-  credit = amount => {};
+  credit = amount => {
+    this.money += amount;
+  };
 
-  debit = amount => {};
+  debit = amount => {
+    this.money -= amount;
+  };
 }
 
+let wallet = new Wallet(1000);
 /**********************************************************
  * Person: defines a person with a name (and feelings)
  *
@@ -62,8 +71,16 @@ class Wallet {
  * let person = new Person(name, x, y);
  **********************************************************/
 class Person {
-  // implement Person!
+  constructor(name, x, y, wallet) {
+    this.name = name;
+    this.location = new Point(x, y);
+    this.wallet = new Wallet() || 0;
+  }
+  moveTo = point => {
+    this.location = point;
+  };
 }
+let person = new Person("Asis", 4, 3);
 
 /**********************************************************
  * Vendor: defines a vendor
@@ -80,8 +97,19 @@ class Person {
  *
  * new vendor = new Vendor(name, x, y);
  **********************************************************/
-class Vendor {
-  // implement Vendor!
+class Vendor extends Person {
+  constructor(name, x, y) {
+    super(name, x, y);
+  }
+  range = 5;
+  price = 1;
+
+  sellTo = (customer, numberOfIceCreams) => {
+    this.moveTo(customer.location);
+    const amount = numberOfIceCreams * this.price;
+    customer.wallet.debit(amount);
+    this.wallet.credit(amount);
+  };
 }
 
 /**********************************************************
@@ -100,8 +128,28 @@ class Vendor {
  *
  * new customer = new Customer(name, x, y);
  **********************************************************/
-class Customer {
-  // implement Customer!
+class Customer extends Person {
+  constructor(name, x, y) {
+    super(name, x, y);
+  }
+  wallet = new Wallet(10);
+
+  _isInRange = vendor => {
+    return this.location.distanceTo(vendor.location) < vendor.range;
+  };
+
+  _haveEnoughMoney = (vendor, numberOfIceCreams) => {
+    return this.wallet.money >= vendor.price * numberOfIceCreams;
+  };
+
+  requestIceCream = (vendor, numberOfIceCreams) => {
+    if (
+      this._isInRange(vendor) &&
+      this._haveEnoughMoney(vendor, numberOfIceCreams)
+    ) {
+      return vendor.sellTo(this, numberOfIceCreams);
+    }
+  };
 }
 
 export { Point, Wallet, Person, Customer, Vendor };
